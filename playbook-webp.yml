@@ -1,0 +1,8 @@
+---
+
+- name: Install & Config WebP
+  hosts: bitrix
+  become: yes
+
+  roles:
+    - deploy_webp

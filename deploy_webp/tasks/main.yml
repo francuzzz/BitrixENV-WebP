@@ -1,0 +1,92 @@
+---
+
+- name: Install a list of packages
+  yum:
+     name:
+        - gcc
+        - make
+        - automake
+        - libjpeg-devel
+        - libpng-devel
+        - libtiff-devel
+     state: latest
+
+- name: Unarchive Source Code
+  unarchive:
+     src: https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-{{ webp_version }}.tar.gz
+     dest: /opt/
+     owner: root
+     group: root
+     remote_src: yes
+
+- name: Build WebP with Magic
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ webp_dir }}{{ webp_version }}"
+  loop:
+    - ./configure
+
+- name: Install the WebP
+  make:
+    chdir: "{{ webp_dir }}{{ webp_version }}"
+    target: install
+
+- name: Make directory for crontab
+  file:
+    owner: bitrix
+    group: bitrix
+    path: '{{ www_dir }}/cron'
+    mode: 0755
+    state: directory
+
+- name: Generate my img2webp
+  template: 
+    src: img2webp.j2  
+    dest: "{{ www_dir }}/cron/img2webp.php"  
+    owner: bitrix 
+    group: bitrix 
+    mode: 0644
+
+- name: Generate my Webp NGINX Config
+  template: 
+    src: webp.j2  
+    dest: "{{ nginx_conf_dir }}/webp.conf"  
+    owner: bitrix 
+    group: bitrix 
+    mode: 0644
+    backup: yes
+
+- name: Generate Bitrix General Config
+  template: 
+    src: bitrix_general.j2  
+    dest: "{{ nginx_conf_dir }}/bitrix_general.conf"  
+    owner: bitrix 
+    group: bitrix 
+    mode: 0644
+    backup: yes
+
+- name: Creates a cron file under /etc/cron.d
+  cron:
+    name: webp
+    minute: "0"
+    hour: "3"
+    user: bitrix
+    job: "{{ php_dir }} {{ www_dir }}/cron/img2webp.php --q=80 --dir={{ www_dir }}"
+    cron_file: ansible_webp
+
+- name: Register NGINX config
+  command: nginx -t
+  ignore_errors: "{{ ansible_check_mode }}"
+  check_mode: false
+  changed_when: false
+  register: nginx
+
+- name: Print NGINX-t
+  debug:
+    msg: "{{nginx.stderr_lines}}"
+
+- name: Restart NGINX
+  service:
+    name: nginx
+    state: restarted 
+  when: "'nginx: the configuration file /etc/nginx/nginx.conf syntax is ok' in nginx.stderr_lines"

@@ -1,0 +1,4 @@
+---
+webp_dir : /opt/libwebp-
+nginx_conf_dir : /etc/nginx/bx/conf
+php_dir : /usr/bin/php

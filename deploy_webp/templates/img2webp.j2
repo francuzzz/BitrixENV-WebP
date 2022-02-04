@@ -1,0 +1,58 @@
+#!/usr/bin/php -q
+<?php
+# script for convert jpg/png images to webp format
+# (c) Alexandr Kazakov (bbik52@yandex.ru)
+# run options:
+# --q=80 (quality)
+# --dir=/path/ (path to directory)
+# --force (force recreate images)
+$allow_ext = array(
+  "jpeg",
+  "jpg",
+  "png"
+);
+$shortopt  = "";
+$longopts  = array(
+  "q:",
+  "dir:",
+  "force"
+);
+
+$options   = getopt($shortopts, $longopts);
+
+if (empty($options['dir']) || empty($options['q'])) {
+  die('empty parameters --q or --dir. exit!' . PHP_EOL);
+}
+
+$target_dir = realpath($options['dir']);
+if (isset($options['force']))
+  $force = true;
+
+function recursive($dir){
+  global $allow_ext, $force, $options;
+
+  $odir = opendir($dir);
+  while (($file = readdir($odir)) !== FALSE) {
+    if ($file == '.' || $file == '..') {
+      continue;
+    } else {
+      $ext = pathinfo($dir . DIRECTORY_SEPARATOR . $file, PATHINFO_EXTENSION);
+      if (isset($ext) && in_array(strtolower($ext), $allow_ext)) {
+        if (!file_exists($dir . DIRECTORY_SEPARATOR . $file . ".webp") || $force == true) {
+          echo "\e[32mCreate file: " . $dir . DIRECTORY_SEPARATOR . $file . ".webp" . PHP_EOL . "\e[0m";
+          shell_exec("/usr/local/bin/cwebp " . escapeshellarg($dir . DIRECTORY_SEPARATOR . $file) . " -q " . (int) $options['q'] . " -o " . escapeshellarg($dir . DIRECTORY_SEPARATOR . $file) . ".webp -quiet"); //echo PHP_EOL.PHP_EOL;
+        } else {
+          echo "\e[31m--- Skip file: " . $dir . DIRECTORY_SEPARATOR . $file . PHP_EOL . "\e[0m";
+        }
+      }
+    }
+    
+    if (is_dir($dir . DIRECTORY_SEPARATOR . $file)) {
+      recursive($dir . DIRECTORY_SEPARATOR . $file);
+    }
+  }
+  closedir($odir);
+}
+
+recursive($target_dir);
+?>
