@@ -1,3 +1,6 @@
+
+<img src="https://blog.shortpixel.com/wp-content/uploads/2016/10/Webp-logo-wordmark.svg_.png" alt="drawing" width="200"/>
+
 # Ansible role for config WebP compression images in BitrixENV
 
 First, let's MAKE the latest version from the source data.
